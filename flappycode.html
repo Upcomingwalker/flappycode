@@ -15,21 +15,24 @@
         }
         #gameContainer {
             position: relative;
-            width: 400px;
-            height: 600px;
+            width: 100vw;
+            max-width: 600px;
+            height: 100vh;
+            max-height: 900px;
             background: #70C5CE;
             overflow: hidden;
+            aspect-ratio: 2/3;
         }
         #bird {
             position: absolute;
-            width: 40px;
-            height: 40px;
-            left: 60px;
+            width: 8%;
+            height: auto;
+            left: 15%;
             transform: translateY(-50%);
         }
         .pipe {
             position: absolute;
-            width: 60px;
+            width: 15%;
         }
         .pipe-top {
             background: linear-gradient(to right, #2ECC71, #27AE60);
@@ -37,7 +40,7 @@
             border-bottom: none;
             border-radius: 5px 5px 0 0;
             position: absolute;
-            left: 400px;  /* Changed from right positioning */
+            left: 100%;
         }
         .pipe-bottom {
             background: linear-gradient(to right, #2ECC71, #27AE60);
@@ -45,18 +48,29 @@
             border-top: none;
             border-radius: 0 0 5px 5px;
             position: absolute;
-            left: 400px;  /* Changed from right positioning */
+            left: 100%;
         }
         #score {
             position: absolute;
-            top: 20px;
+            top: 5%;
             left: 50%;
             transform: translateX(-50%);
             color: white;
-            font-size: 40px;
+            font-size: 6vh;
             font-weight: bold;
             text-shadow: 2px 2px 0 #000;
             z-index: 1;
+        }
+        #credits {
+            position: absolute;
+            bottom: 20%;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            font-size: 2vh;
+            text-shadow: 1px 1px 0 #000;
+            z-index: 1;
+            text-align: center;
         }
         #gameOver {
             position: absolute;
@@ -67,7 +81,7 @@
             padding: 20px;
             border-radius: 10px;
             color: white;
-            font-size: 24px;
+            font-size: 4vh;
             display: none;
             text-align: center;
             z-index: 2;
@@ -76,7 +90,7 @@
             background: #2ECC71;
             border: none;
             padding: 10px 20px;
-            font-size: 18px;
+            font-size: 3vh;
             color: white;
             border-radius: 5px;
             margin-top: 20px;
@@ -89,7 +103,7 @@
             position: absolute;
             bottom: 0;
             width: 100%;
-            height: 100px;
+            height: 16.67%;
             background: #DEB887;
             border-top: 5px solid #8B4513;
         }
@@ -98,6 +112,7 @@
 <body>
     <div id="gameContainer">
         <div id="score">0</div>
+        <div id="credits">Created by Tanuj Sharma</div>
         <svg id="bird" viewBox="0 0 40 40">
             <circle cx="20" cy="20" r="18" fill="#FFD700"/>
             <circle cx="25" cy="15" r="4" fill="black"/>
@@ -117,19 +132,25 @@
         const scoreElement = document.getElementById('score');
         const gameOverScreen = document.getElementById('gameOver');
         
-        let birdY = 300;
+        // Get container dimensions
+        let containerHeight = gameContainer.clientHeight;
+        let containerWidth = gameContainer.clientWidth;
+        
+        let birdY = containerHeight / 2;
         let velocity = 0;
         let score = 0;
         let gameActive = false;
         let pipes = [];
-        const gravity = 0.5;
-        const jump = -8;
-        const pipeGap = 150;
+        let gravity = containerHeight * 0.001;
+        let jump = containerHeight * -0.016;
+        const pipeGap = containerHeight * 0.35; // Increased gap between pipes
         
         function createPipe() {
             if (!gameActive) return;
             
-            const pipeHeight = Math.random() * 200 + 100;
+            const minHeight = containerHeight * 0.1;
+            const maxHeight = containerHeight * 0.6;
+            const pipeHeight = Math.random() * (maxHeight - minHeight) + minHeight;
             
             const topPipe = document.createElement('div');
             topPipe.className = 'pipe pipe-top';
@@ -138,8 +159,8 @@
             
             const bottomPipe = document.createElement('div');
             bottomPipe.className = 'pipe pipe-bottom';
-            bottomPipe.style.height = (600 - pipeHeight - pipeGap - 100) + 'px';
-            bottomPipe.style.bottom = '100px';
+            bottomPipe.style.height = (containerHeight - pipeHeight - pipeGap - containerHeight * 0.1667) + 'px';
+            bottomPipe.style.bottom = (containerHeight * 0.1667) + 'px';
             
             gameContainer.appendChild(topPipe);
             gameContainer.appendChild(bottomPipe);
@@ -147,99 +168,88 @@
             pipes.push({
                 top: topPipe,
                 bottom: bottomPipe,
-                x: 400,
+                x: containerWidth,
                 scored: false
             });
         }
         
         function startGame() {
-            birdY = 300;
+            birdY = containerHeight / 2;
             velocity = 0;
             score = 0;
             gameActive = true;
             scoreElement.textContent = '0';
             gameOverScreen.style.display = 'none';
             
-            // Clear existing pipes
             pipes.forEach(pipe => {
                 pipe.top.remove();
                 pipe.bottom.remove();
             });
             pipes = [];
             
-            // Create initial pipe at a more generous starting position
             setTimeout(() => {
                 createPipe();
                 startPipeGeneration();
-            }, 1500);  // Delay first pipe creation
+            }, 1500);
             
-            // Set initial bird position
             bird.style.top = birdY + 'px';
         }
         
         function update() {
             if (!gameActive) return;
             
-            // Update bird position
             velocity += gravity;
             birdY += velocity;
             bird.style.top = birdY + 'px';
             
-            // Rotate bird based on velocity
             const rotation = Math.min(Math.max(velocity * 5, -45), 45);
             bird.style.transform = `translateY(-50%) rotate(${rotation}deg)`;
             
-            // Check ground collision
-            if (birdY > 500 || birdY < 0) {
+            if (birdY > containerHeight * 0.8333 || birdY < 0) {
                 gameOver();
                 return;
             }
             
-            // Update pipes
             for (let i = pipes.length - 1; i >= 0; i--) {
                 const pipe = pipes[i];
-                pipe.x -= 2;
+                pipe.x -= containerWidth * 0.005;
                 
-                // Update pipe positions using left instead of right
                 pipe.top.style.left = pipe.x + 'px';
                 pipe.bottom.style.left = pipe.x + 'px';
                 
-                // Score when passing pipe
-                if (!pipe.scored && pipe.x < 60) {
+                if (!pipe.scored && pipe.x < containerWidth * 0.15) {
                     pipe.scored = true;
                     score++;
                     scoreElement.textContent = score;
                 }
                 
-                // Remove off-screen pipes
-                if (pipe.x < -60) {
+                if (pipe.x < -containerWidth * 0.15) {
                     pipe.top.remove();
                     pipe.bottom.remove();
                     pipes.splice(i, 1);
                     continue;
                 }
                 
-                // Collision detection
-                if (pipe.x < 100 && pipe.x > -40) {  // Only check when pipe is near bird
+                if (pipe.x < containerWidth * 0.25 && pipe.x > -containerWidth * 0.1) {
                     const birdRect = {
-                        left: 60,
-                        right: 100,
-                        top: birdY - 20,
-                        bottom: birdY + 20
+                        left: containerWidth * 0.15,
+                        right: containerWidth * 0.25,
+                        top: birdY - containerHeight * 0.033,
+                        bottom: birdY + containerHeight * 0.033
                     };
                     
                     const topPipeRect = {
                         left: pipe.x,
-                        right: pipe.x + 60,
+                        right: pipe.x + containerWidth * 0.15,
                         top: 0,
                         bottom: parseInt(pipe.top.style.height)
                     };
                     
                     const bottomPipeRect = {
                         left: pipe.x,
-                        right: pipe.x + 60,
-                        top: 600 - parseInt(pipe.bottom.style.height) - 100,
-                        bottom: 500
+                        right: pipe.x + containerWidth * 0.15,
+                        top: containerHeight - parseInt(pipe.bottom.style.height) - containerHeight * 0.1667,
+                        bottom: containerHeight * 0.8333
                     };
                     
                     if (checkCollision(birdRect, topPipeRect) || 
@@ -272,7 +282,6 @@
             }
         }
         
-        // Event listeners
         document.addEventListener('keydown', (e) => {
             if (e.code === 'Space') {
                 flap();
@@ -285,9 +294,7 @@
             e.preventDefault();
         });
         
-        // Game loops
         function startPipeGeneration() {
-            // Clear any existing interval
             if (window.pipeInterval) {
                 clearInterval(window.pipeInterval);
             }
@@ -296,8 +303,25 @@
         
         setInterval(update, 1000/60);
         
-        // Initialize bird position
         bird.style.top = birdY + 'px';
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            const newHeight = gameContainer.clientHeight;
+            const newWidth = gameContainer.clientWidth;
+            
+            // Update size-dependent variables
+            birdY = birdY * (newHeight / containerHeight);
+            velocity = velocity * (newHeight / containerHeight);
+            
+            // Update physics constants
+            gravity = newHeight * 0.001;
+            jump = newHeight * -0.016;
+            
+            // Update container dimensions
+            containerHeight = newHeight;
+            containerWidth = newWidth;
+        });
     </script>
 </body>
 </html>
